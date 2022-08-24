@@ -1,0 +1,57 @@
+// Google Ads MCC script for monitoring and alerting on failed offline conversion uploads
+// or other account errors that would prevent the recording of conversions properly
+// attributed to custom conversion actions.
+
+// There are very few variables to replace, indicated BY-CASE-AND-HYPHENATION,
+// and the script is compatible with the new (Summer 2022) Google Ads Scripts
+// experience.
+
+
+function main() {
+  var MILLIS_PER_DAY = 1000 * 60 * 60 * 24;
+  var now = new Date();
+  var timeZone = AdsApp.currentAccount().getTimeZone();
+  var yest = new Date(now.getTime() - MILLIS_PER_DAY);
+  var yesterday = Utilities.formatDate(yest, timeZone, 'yyyy-MM-dd');
+  Logger.log(yesterday);
+  var mccAccount = AdsApp.currentAccount();
+  var childAccounts = AdsManagerApp.accounts().withIds(['MCC-ACCOUNT-ID-HERE']).get();
+  var childAccount = childAccounts.next();
+ 
+  AdsManagerApp.select(childAccount);
+ 
+// Now in the child account.
+ 
+var my_conversion_action = AdsApp.report('SELECT metrics.conversions, segments.conversion_action_name ' +
+                         'FROM customer ' +
+                         'WHERE segments.conversion_action_name = "CONVERSION-ACTION-NAME-HERE" ' +
+                         'AND segments.date = "' + yesterday + '"');
+ 
+var rows = my_conversion_action.rows();
+try {
+  var row = rows.next();
+  var my_action_conversions = row['metrics.conversions'];
+} catch (e) {var my_action_conversions = 0};
+Logger.log(my_action_conversions);
+
+// This can be done for any number of named conversion actions
+ 
+totalConv = SUM-CONVERSION-ACTION-VARS-HERE;
+ 
+Logger.log(totalConv);
+ 
+const recipientsTo = ["REPORT-RECIPIENT-ONE@DOMAIN.COM", "REPORT-RECIPIENT-TWO@DOMAIN.COM"];
+var now = new Date();
+ 
+if (my_conversion_action == 0 || addl_conversion_actions == 0) {
+    Logger.log("ALERT: 0 Conversions Reported in Google Ads Yesterday for ACTION-NAME-HERE")
+    function sendSimpleTextEmail(recipient) {
+        MailApp.sendEmail(recipient, 'ALERT: Missing offline conversions from yestterday',
+                    'This is an automated notification that the account ACCOUNT-NAME-HERE has recorded 0 conversions for yesterday
+                   \n\nThis automated message was generated on ' + now + '. For questions or work requests related to these alerts, please contact MY-EMAIL-HERE@DOMAIN.COM.\n\n' + totalConv);
+        Logger.log("Email sent to " + recipient);
+       
+};
+      recipientsTo.forEach(sendSimpleTextEmail);
+  };
+}
